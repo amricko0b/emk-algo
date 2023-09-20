@@ -1,55 +1,119 @@
 package xyz.amricko0b.emk.algo.vin;
 
+import java.util.Objects;
 import java.util.regex.Pattern;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
 
-public record Vin(String raw) {
+/** VIN-код */
+@RequiredArgsConstructor(access = AccessLevel.PROTECTED)
+public class Vin {
 
+  /**
+   * Парсинг VIN без валидации
+   *
+   * @param raw сырой VIN
+   * @return объект
+   */
+  public static Vin fromStringUnsafe(String raw) {
+    return new Vin(raw.toUpperCase());
+  }
+
+  /** Стандартная длина VIN */
   private static final int VIN_LENGTH = 17;
 
-  public boolean valid() {
-    var pivot = raw.toUpperCase();
+  /** Строка VIN в ВЕРХНЕМ регистре */
+  private final String pivot;
 
-    // todo Попробовать подобрать регексп
+  /**
+   * @return валидный или нет?
+   */
+  public boolean isValid() {
+
     boolean is17 = pivot.length() == VIN_LENGTH;
     boolean hasNoCollisions = !Pattern.matches("[QIO]+", pivot);
-
-    // todo Проверять на валидность регион
 
     return is17 && hasNoCollisions;
   }
 
-  public String country() {
+  /**
+   * @return страна-изготовитель
+   * @see WmiCountry
+   */
+  public String getCountryName() {
 
-    if (!valid()) {
+    if (pivot.length() < 3) {
       throw new IllegalStateException("Provided string is not a VIN");
     }
 
-    var pivot = raw.substring(0, 4).toUpperCase();
-    var region = WmiRegion.fromChar(pivot.charAt(0));
-    var countries = WmiIndex.REGION_COUNTRY.get(region);
+    // WMI - это первые 3 символа
+    var wmi = pivot.substring(0, 3);
 
-    for (var country : countries) {
-      if (country.supportedBy(pivot.charAt(1))) {
-        return country.name();
+    // Ищем регулярками для каждой страны
+    WmiCountry country = null;
+    for (var another : WmiCountry.values()) {
+      if (another.getRegexp().matcher(wmi).matches()) {
+        country = another;
       }
     }
 
-    throw new IllegalArgumentException("No such WMI: " + pivot);
+    if (Objects.isNull(country)) {
+      throw new IllegalArgumentException("No such WMI: " + wmi);
+    }
+
+    return country.name().replace('_', ' ');
   }
 
-  public String year() {
-    var yearCode = Character.toUpperCase(raw.charAt(9));
-
-    if (Character.isAlphabetic(yearCode)) {
-
-      // todo нет буквы I
-      var old = yearCode + 1915;
-      var mint = yearCode + 1945;
-
-      return String.format("%d or %d", old, mint);
-    } else {
-      // todo Не учтены числовые коды
-      return "";
+  /**
+   * @return год производства
+   */
+  public String getManufacturingYear() {
+    if (!isValid()) {
+      throw new IllegalStateException("Provided string is not a VIN");
     }
+
+    char yearCode;
+    try {
+      // Код года располагается на 10 позиции
+      yearCode = pivot.charAt(9);
+    } catch (IndexOutOfBoundsException ex) {
+      throw new IllegalArgumentException("Unable to determine year - VIN too short");
+    }
+
+    // Является ли код буквой?
+    var isLetter = Character.isAlphabetic(yearCode);
+
+    // Каждой букве и цифре соответствует 2 разных года.
+    // Скоро будет 3, после 2035 что ли
+    int old;
+    int fresh;
+
+    // Вычисляем год по разнице между кодом сивола и самим годом
+    // Фишка в том, что из-за отсутствия в VIN некоторых букв - разница не фиксированная
+    if (isLetter && yearCode >= 'A' && yearCode <= 'H') {
+      old = yearCode + 1915;
+      fresh = yearCode + 1945;
+    } else if (isLetter && yearCode >= 'J' && yearCode <= 'N') {
+      old = yearCode + 1914;
+      fresh = yearCode + 1944;
+    } else if (isLetter && yearCode == 'P') {
+      old = 1993;
+      fresh = 2023;
+    } else if (isLetter && yearCode >= 'R' && yearCode <= 'T') {
+      old = yearCode + 1912;
+      fresh = yearCode + 1942;
+    } else if (isLetter && yearCode >= 'V' && yearCode <= 'Y') {
+      old = yearCode + 1911;
+      fresh = yearCode + 1941;
+    } else if (!isLetter) {
+
+      // Если код не является буквой - тогда проще, цифры все входят
+      old = yearCode + 1952;
+      fresh = yearCode + 1982;
+    } else {
+      throw new IllegalArgumentException("Wrong year code: " + yearCode);
+    }
+
+    return String.format("%d or %d", old, fresh);
   }
 }
