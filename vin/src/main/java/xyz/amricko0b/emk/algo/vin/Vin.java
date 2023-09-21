@@ -15,8 +15,26 @@ public class Vin {
    * @param raw сырой VIN
    * @return объект
    */
-  public static Vin fromStringUnsafe(String raw) {
+  public static Vin fromString(String raw) {
+
+    if (!isValid(raw)) {
+      throw new IllegalArgumentException("Not a valid VIN: " + raw);
+    }
+
     return new Vin(raw.toUpperCase());
+  }
+
+  /**
+   * Проверка VIN на валидность
+   *
+   * @param raw сырой vin
+   * @return валидный или нет?
+   */
+  public static boolean isValid(String raw) {
+    boolean is17 = raw.length() == VIN_LENGTH;
+    boolean hasNoCollisions = !Pattern.matches("[QIO]+", raw.toUpperCase());
+
+    return is17 && hasNoCollisions;
   }
 
   /** Стандартная длина VIN */
@@ -26,21 +44,10 @@ public class Vin {
   private final String pivot;
 
   /**
-   * @return валидный или нет?
-   */
-  public boolean isValid() {
-
-    boolean is17 = pivot.length() == VIN_LENGTH;
-    boolean hasNoCollisions = !Pattern.matches("[QIO]+", pivot);
-
-    return is17 && hasNoCollisions;
-  }
-
-  /**
    * @return страна-изготовитель
    * @see WmiCountry
    */
-  public String getCountryName() {
+  public WmiCountry getCountry() {
 
     if (pivot.length() < 3) {
       throw new IllegalStateException("Provided string is not a VIN");
@@ -61,17 +68,13 @@ public class Vin {
       throw new IllegalArgumentException("No such WMI: " + wmi);
     }
 
-    return country.name().replace('_', ' ');
+    return country;
   }
 
   /**
    * @return год производства
    */
   public String getManufacturingYear() {
-    if (!isValid()) {
-      throw new IllegalStateException("Provided string is not a VIN");
-    }
-
     char yearCode;
     try {
       // Код года располагается на 10 позиции
