@@ -16,7 +16,7 @@ import lombok.Setter;
 @Entity(name = "Game")
 @Table(name = "tg_game")
 @EqualsAndHashCode(of = "guid")
-public class Game {
+public class JpaGame {
 
   /** GUID игры */
   @Id

@@ -8,7 +8,7 @@ import java.util.Objects;
 import xyz.amricko0b.tablegames.command.event.GameCreated;
 import xyz.amricko0b.tablegames.command.execption.BadCommandException;
 import xyz.amricko0b.tablegames.dao.GameRepository;
-import xyz.amricko0b.tablegames.dao.jpa.Game;
+import xyz.amricko0b.tablegames.dao.jpa.JpaGame;
 
 @ApplicationScoped
 public class CreateGameHandler implements Command.Handler<CreateGame, GameCreated> {
@@ -34,7 +34,7 @@ public class CreateGameHandler implements Command.Handler<CreateGame, GameCreate
       throw new BadCommandException("Game " + createGame.title() + " already exists!");
     }
 
-    var entity = new Game();
+    var entity = new JpaGame();
     entity.setTitle(createGame.title());
     repository.persist(entity);
 
