@@ -1,0 +1,10 @@
+quarkus:
+
+  hibernate-orm:
+    database:
+      generation: VALIDATE
+
+  flyway:
+    migrate-at-start: true
+    locations:
+      - flyway

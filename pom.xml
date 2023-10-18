@@ -13,6 +13,7 @@
   <modules>
     <module>vin</module>
     <module>regmark</module>
+    <module>tablegames</module>
   </modules>
 
   <properties>
@@ -67,6 +68,12 @@
         <version>${lombok.version}</version>
         <scope>provided</scope>
       </dependency>
+
+      <dependency>
+        <groupId>com.github.javafaker</groupId>
+        <artifactId>javafaker</artifactId>
+        <version>1.0.2</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
@@ -90,6 +97,7 @@
           <artifactId>maven-compiler-plugin</artifactId>
           <version>3.11.0</version>
           <configuration>
+            <parameters>true</parameters>
             <annotationProcessorPaths>
               <path>
                 <groupId>org.projectlombok</groupId>
@@ -105,11 +113,6 @@
                 <groupId>org.mapstruct</groupId>
                 <artifactId>mapstruct-processor</artifactId>
                 <version>${mapstruct.version}</version>
-              </path>
-              <path>
-                <groupId>com.datastax.oss.quarkus</groupId>
-                <artifactId>cassandra-quarkus-mapper-processor</artifactId>
-                <version>${cassandra-quarkus.version}</version>
               </path>
             </annotationProcessorPaths>
           </configuration>
@@ -135,6 +138,22 @@
               <phase>validate</phase>
               <goals>
                 <goal>check</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+
+        <plugin>
+          <groupId>io.quarkus.platform</groupId>
+          <artifactId>quarkus-maven-plugin</artifactId>
+          <version>${quarkus.version}</version>
+          <extensions>true</extensions>
+          <executions>
+            <execution>
+              <goals>
+                <goal>build</goal>
+                <goal>generate-code</goal>
+                <goal>generate-code-tests</goal>
               </goals>
             </execution>
           </executions>
